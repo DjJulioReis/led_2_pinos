@@ -1,8 +1,11 @@
 /*
   SISTEMA DE CONTROLE OWIRE LED - ESP32-C3 SUPER MINI
-  VERSÃO DE DIAGNÓSTICO E SEGURANÇA
 
-  PASTA DO PROJETO: OWirePro (O arquivo deve se chamar OWirePro.ino)
+  Configuração DMX:
+  - Canal 1: Cor (Endereço 1 na Mesa)
+  - Canal 2: Efeito (Endereço 2 na Mesa)
+
+  PASTA DO PROJETO: OWirePro
 */
 
 #include <Wire.h>
@@ -11,110 +14,107 @@
 #include <SparkFun_OWire_Arduino_Library.h>
 #include <Preferences.h>
 
-// PINOS SUPER MINI C3
-#define OLED_SDA 0
-#define OLED_SCL 1
-#define PIN_OWIRE 6
-#define PIN_ONBOARD_LED 8
-#define PIN_DMX_RX 20
-
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-OWIRE meusLeds;
+OWIRE myLed; // Nome padrão em inglês conforme solicitado
+#define PIN_OWIRE 6
+
+// Pinos I2C
+#define SDA_PIN 0
+#define SCL_PIN 1
+
 Preferences preferences;
+uint8_t dmx_val_ch1 = 0;
+uint8_t dmx_val_ch2 = 0;
+uint8_t current_color = OW_WHITE;
+uint8_t current_mode = OW_SOLID;
 
 const char* color_names[] = {"OFF", "RED", "GREEN", "YELLOW", "BLUE", "VIOLET", "CYAN", "WHITE", "RANDOM", "RGW", "RBW", "6COLOR"};
-uint8_t dmx_val_ch1 = 0, dmx_val_ch2 = 0;
-uint8_t current_color = OW_WHITE, current_mode = OW_SOLID;
+
+void saveSettings() {
+  preferences.begin("led-settings", false);
+  preferences.putUChar("color", current_color);
+  preferences.putUChar("mode", current_mode);
+  preferences.end();
+}
 
 void setup() {
   Serial.begin(115200);
+  Wire.begin(SDA_PIN, SCL_PIN);
 
-  // 1. LED de Status
-  pinMode(PIN_ONBOARD_LED, OUTPUT);
-  digitalWrite(PIN_ONBOARD_LED, LOW); // Liga
-
-  // 2. OLED em pinos alternativos
-  Wire.begin(OLED_SDA, OLED_SCL);
   if(display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(WHITE);
     display.setCursor(0,0);
-    display.println("OWIRE DIAGNOSTICO");
+    display.println("OWIRE PRO DMX");
     display.display();
   }
 
-  // 3. Recuperar Memoria
+  myLed.begin(PIN_OWIRE, false);
+
   preferences.begin("led-settings", true);
   current_color = preferences.getUChar("color", OW_WHITE);
   current_mode = preferences.getUChar("mode", OW_SOLID);
   preferences.end();
 
-  // 4. Teste LED OWire
-  if(meusLeds.begin(PIN_OWIRE, false)) {
-    meusLeds.setModeAndColor(current_mode, current_color);
-  }
+  // DMX RX em Serial1 (GPIO 20)
+  Serial1.begin(250000, SERIAL_8N2, 20, -1);
 
-  // 5. DMX
-  Serial1.begin(250000, SERIAL_8N2, PIN_DMX_RX, -1);
-
-  digitalWrite(PIN_ONBOARD_LED, HIGH); // Desliga apos iniciar
+  myLed.setModeAndColor(current_mode, current_color);
 }
 
 unsigned long last_dmx_packet = 0;
 void loop() {
   if (Serial1.available()) {
-    // Se houver uma pausa no sinal DMX, limpamos o buffer para tentar sincronizar
-    if (millis() - last_dmx_packet > 50) {
+    // Sincronia: Após silêncio de 10ms, limpamos o buffer e esperamos o início
+    if (millis() - last_dmx_packet > 10) {
+      // Limpa buffer para garantir que começamos no byte 0
       while(Serial1.available() > 0) Serial1.read();
-    }
 
-    // Leitura simplificada: Canal 0 (Start), Canal 1, Canal 2
-    if (Serial1.available() >= 3) {
-      uint8_t startCode = Serial1.read();
-      if (startCode == 0) { // DMX Standard data packet
-        uint8_t c1 = Serial1.read();
-        uint8_t c2 = Serial1.read();
+      // Espera o frame completo ou parte dele
+      delay(20);
 
-        bool changed = false;
-        if (c1 != dmx_val_ch1) {
-          dmx_val_ch1 = c1;
-          current_color = map(c1, 0, 255, 0, 11);
-          changed = true;
+      int count = 0;
+      bool changed = false;
+      while (Serial1.available() && count < 5) {
+        uint8_t val = Serial1.read();
+        if (count == 1) { // CANAL 1
+          if (val != dmx_val_ch1) {
+            dmx_val_ch1 = val;
+            current_color = map(val, 0, 255, 0, 11);
+            myLed.setColor(current_color);
+            changed = true;
+          }
         }
-        if (c2 != dmx_val_ch2) {
-          dmx_val_ch2 = c2;
-          current_mode = map(c2, 0, 255, 0, 7) << 4;
-          changed = true;
+        else if (count == 2) { // CANAL 2
+          if (val != dmx_val_ch2) {
+            dmx_val_ch2 = val;
+            current_mode = map(val, 0, 255, 0, 7) << 4;
+            myLed.setMode(current_mode);
+            changed = true;
+          }
         }
+        count++;
+      }
 
-        if (changed) {
-          meusLeds.setModeAndColor(current_mode, current_color);
-
-          display.clearDisplay();
-          display.setCursor(0,0);
-          display.print("DMX CH1: "); display.println(dmx_val_ch1);
-          display.print("DMX CH2: "); display.println(dmx_val_ch2);
-          display.print("COR: "); display.println(color_names[current_color % 12]);
-          display.display();
-
-          preferences.begin("led-settings", false);
-          preferences.putUChar("color", current_color);
-          preferences.putUChar("mode", current_mode);
-          preferences.end();
-        }
+      if (changed) {
+        updateUI();
+        saveSettings();
       }
     }
     last_dmx_packet = millis();
   }
+}
 
-  // Heartbeat LED
-  static unsigned long last_blink = 0;
-  if (millis() - last_blink > 500) {
-    digitalWrite(PIN_ONBOARD_LED, !digitalRead(PIN_ONBOARD_LED));
-    last_blink = millis();
-  }
+void updateUI() {
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("DMX MONITOR");
+  display.print("CH1 (COR): "); display.println(dmx_val_ch1);
+  display.print("CH2 (EFE): "); display.println(dmx_val_ch2);
+  display.print("ST: "); display.println(color_names[current_color % 12]);
+  display.display();
 }
