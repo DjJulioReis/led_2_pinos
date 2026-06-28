@@ -19,7 +19,7 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 OWIRE meusLeds;
-#define PIN_OWIRE 10
+#define PIN_OWIRE 2 // Alterado para GPIO 2 conforme solicitado
 
 // Botões
 #define BTN_UP 3
@@ -71,15 +71,12 @@ void updateDisplay() {
   display.display();
 }
 
-// Lógica DMX com tentativa de sincronia simples
 unsigned long last_dmx_byte = 0;
 void handleDMX() {
   if (current_source != SOURCE_DMX) return;
 
   if (Serial1.available()) {
-    // Se passou muito tempo desde o último byte, assumimos novo frame
     if (millis() - last_dmx_byte > 10) {
-       // Pequena limpeza para alinhar com o início do pacote
        int count = 0;
        while(Serial1.available() && count < 513) {
          uint8_t val = Serial1.read();
@@ -124,7 +121,6 @@ void setup() {
 void loop() {
   handleDMX();
 
-  // Troca de modo
   if(digitalRead(BTN_SELECT) == LOW) {
     current_source = (current_source == SOURCE_DMX) ? SOURCE_MANUAL : SOURCE_DMX;
     saveSettings();
@@ -132,7 +128,6 @@ void loop() {
     delay(500);
   }
 
-  // Controle Manual
   if (current_source == SOURCE_MANUAL) {
     bool changed = false;
     if(digitalRead(BTN_UP) == LOW) {
