@@ -2,17 +2,23 @@
 
 Este sistema permite alternar entre controle manual e via DMX.
 
-## 1. Como Selecionar a Fonte de Controle
+## 🚀 Como resolver o erro de Compilação
+O erro `undefined reference to setup()` e `loop()` acontece quando o Arduino IDE tenta compilar arquivos `.ino` fora de uma pasta com o mesmo nome ou quando há vários arquivos na raiz.
+
+**Como usar os arquivos deste repositório:**
+1. Para o sistema completo, abra a pasta `OWirePro` e clique em `OWirePro.ino`.
+2. Para um teste simples, abra a pasta `exemplo_basico` e clique em `exemplo_basico.ino`.
+
+## 1. Como Selecionar a Fonte de Controle (No OWirePro)
 O sistema possui dois modos de operação:
 
-1. **MANUAL:** O controle é feito exclusivamente pelos botões e OLED do painel. Comandos DMX são ignorados.
+1. **MANUAL:** O controle é feito pelos botões e OLED.
 2. **DMX:** O sistema obedece aos comandos vindos da porta DMX (Canais 1 e 2).
 
 ### Para trocar a fonte:
-1. Pressione o botão **SELECT** para entrar no menu.
-2. O cursor estará em **FONTE**.
-3. Pressione o botão **DOWN** para alternar entre MANUAL e DMX.
-4. Pressione **BACK** para sair e salvar.
+1. Pressione **SELECT** para entrar no menu.
+2. Com o cursor em **FONTE**, pressione **DOWN** para alternar entre MANUAL e DMX.
+3. Pressione **BACK** para sair e salvar.
 
 ## 2. Pinagem (Hardware)
 | Componente | Pino |
@@ -23,14 +29,7 @@ O sistema possui dois modos de operação:
 | **SELECT / BACK** | GPIO 5 / 6 |
 | **DMX RX** | GPIO 20 |
 
-## 3. Comportamento da Memória
-Tanto a **Fonte Selecionada** quanto a **Última Cor/Modo** são gravados na memória Flash automaticamente ao serem alterados. Ao reiniciar o dispositivo, ele voltará no mesmo modo de operação anterior.
-
-## 4. Dicas de Uso
-- Se estiver no modo **DMX**, os botões do painel ainda permitem navegar no menu, mas o LED será atualizado assim que um novo pacote DMX chegar.
-- Use o modo **MANUAL** para travar uma configuração específica e evitar interferências externas.
-
-## 5. Bibliotecas Necessárias
+## 3. Bibliotecas Necessárias
 - `Adafruit SSD1306` & `Adafruit GFX`
 - `Preferences` (Nativa)
 - `SparkFun OWire Arduino Library` (Incluída no repo)
