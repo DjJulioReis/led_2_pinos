@@ -1,18 +1,17 @@
 # Sistema Profissional OWire LED - ESP32-C3 Super Mini
 
-Este sistema permite alternar entre controle manual, via App (RF/BLE) e DMX.
+Este sistema permite alternar entre controle manual e via DMX.
 
 ## 1. Como Selecionar a Fonte de Controle
-O sistema possui três modos de operação que determinam quem tem prioridade:
+O sistema possui dois modos de operação:
 
-1. **MANUAL:** O controle é feito exclusivamente pelos botões e OLED do painel. Comandos via BLE ou DMX são ignorados.
+1. **MANUAL:** O controle é feito exclusivamente pelos botões e OLED do painel. Comandos DMX são ignorados.
 2. **DMX:** O sistema obedece aos comandos vindos da porta DMX (Canais 1 e 2).
-3. **APP/RF:** O sistema obedece aos comandos enviados via Bluetooth pelo App Flutter.
 
 ### Para trocar a fonte:
 1. Pressione o botão **SELECT** para entrar no menu.
 2. O cursor estará em **FONTE**.
-3. Pressione o botão **DOWN** para ciclar entre MANUAL, DMX e APP/RF.
+3. Pressione o botão **DOWN** para alternar entre MANUAL e DMX.
 4. Pressione **BACK** para sair e salvar.
 
 ## 2. Pinagem (Hardware)
@@ -29,5 +28,9 @@ Tanto a **Fonte Selecionada** quanto a **Última Cor/Modo** são gravados na mem
 
 ## 4. Dicas de Uso
 - Se estiver no modo **DMX**, os botões do painel ainda permitem navegar no menu, mas o LED será atualizado assim que um novo pacote DMX chegar.
-- No modo **APP/RF**, o LED só mudará quando você enviar um comando pelo aplicativo.
 - Use o modo **MANUAL** para travar uma configuração específica e evitar interferências externas.
+
+## 5. Bibliotecas Necessárias
+- `Adafruit SSD1306` & `Adafruit GFX`
+- `Preferences` (Nativa)
+- `SparkFun OWire Arduino Library` (Incluída no repo)
