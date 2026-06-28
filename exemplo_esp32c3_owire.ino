@@ -1,69 +1,81 @@
 /*
-  Exemplo de controle de LEDs RGB de 2 pinos (OWire) usando ESP32-C3 Super Mini.
+  Exemplo de controle INDEPENDENTE de LEDs RGB de 2 pinos (OWire) usando ESP32-C3.
 
-  Este código utiliza a biblioteca SparkFun OWire Arduino Library.
+  Este código permite controlar duas fitas/LEDs em pinos diferentes de forma independente
+  através do Monitor Serial.
 
   Conexões:
-  - Se estiver usando apenas UM LED:
-    - LED Anodo (perna longa/positiva) -> GPIO 2 do ESP32-C3
-    - LED Catodo (perna curta/negativa) -> GND do ESP32-C3
-    - *Nota: O ESP32-C3 opera a 3.3V, o que pode ser baixo para alguns LEDs RGB,
-      mas geralmente funciona para testes simples. Para fitas ou muitos LEDs,
-      use um MOSFET.*
+  - Fita 1: GPIO 2
+  - Fita 2: GPIO 3
 
-  - Se estiver usando vários LEDs ou fonte externa:
-    - Verifique o esquema recomendado no README da biblioteca (uso de MOSFET P-Channel).
+  Comandos via Serial (9600 ou 115200):
+  'r' -> Vermelho (Fita 1)
+  'g' -> Verde (Fita 1)
+  'b' -> Azul (Fita 1)
+  '1' -> Modo Sólido (Fita 1)
+  '2' -> Modo Fade (Fita 1)
+
+  'R' -> Vermelho (Fita 2)
+  'G' -> Verde (Fita 2)
+  'B' -> Azul (Fita 2)
+  '!' -> Modo Sólido (Fita 2)
+  '@' -> Modo Fade (Fita 2)
 */
 
 #include <SparkFun_OWire_Arduino_Library.h>
 
-// Pino de controle
-const int PIN_LED = 2;
+// Pinos de controle
+const int PIN_LED_1 = 2;
+const int PIN_LED_2 = 3;
 
-// Cria uma instância do objeto OWIRE
-OWIRE meusLeds;
+// Instâncias independentes
+OWIRE fita1;
+OWIRE fita2;
 
 void setup() {
   Serial.begin(115200);
+  while(!Serial); // Aguarda abrir o monitor
 
-  // Inicializa o pino.
-  // O segundo parâmetro é 'true' se estiver usando lógica invertida (ex: MOSFET P-Channel)
-  // Como estamos ligando direto no pino (para 1 LED), usamos 'false'.
-  if(meusLeds.begin(PIN_LED, false)) {
-    Serial.println("Biblioteca OWire inicializada com sucesso!");
-  }
+  Serial.println("--- Controle OWire ESP32-C3 ---");
 
-  // Define um estado inicial: Cor Sólida e Ciano
-  meusLeds.setModeAndColor(OW_SOLID, OW_CYAN);
-  delay(2000);
+  // Inicializa as fitas.
+  // Use 'true' se estiver usando MOSFET P-Channel (Recomendado para estabilidade)
+  fita1.begin(PIN_LED_1, false);
+  fita2.begin(PIN_LED_2, false);
+
+  // Estados iniciais
+  fita1.setModeAndColor(OW_SOLID, OW_WHITE);
+  fita2.setModeAndColor(OW_SOLID, OW_WHITE);
+
+  Serial.println("Pronto! Digite comandos no Serial Monitor.");
 }
 
 void loop() {
-  // Ciclo de Cores
-  Serial.println("Trocando cores...");
-  meusLeds.setColor(OW_RED);
-  delay(1000);
-  meusLeds.setColor(OW_GREEN);
-  delay(1000);
-  meusLeds.setColor(OW_BLUE);
-  delay(1000);
-  meusLeds.setColor(OW_YELLOW);
-  delay(1000);
-  meusLeds.setColor(OW_WHITE);
-  delay(1000);
+  if (Serial.available() > 0) {
+    char cmd = Serial.read();
 
-  // Ciclo de Modos
-  Serial.println("Trocando modos...");
+    switch(cmd) {
+      // Fita 1 - Cores
+      case 'r': fita1.setColor(OW_RED); Serial.println("Fita 1: Vermelho"); break;
+      case 'g': fita1.setColor(OW_GREEN); Serial.println("Fita 1: Verde"); break;
+      case 'b': fita1.setColor(OW_BLUE); Serial.println("Fita 1: Azul"); break;
+      case 'w': fita1.setColor(OW_WHITE); Serial.println("Fita 1: Branco"); break;
 
-  // Fade de 8 segundos
-  meusLeds.setMode(OW_8SECONDFADE);
-  delay(8000);
+      // Fita 1 - Modos
+      case '1': fita1.setMode(OW_SOLID); Serial.println("Fita 1: Solido"); break;
+      case '2': fita1.setMode(OW_8SECONDFADE); Serial.println("Fita 1: Fade 8s"); break;
+      case '3': fita1.setMode(OW_COLORSPARKLES_FAST); Serial.println("Fita 1: Sparkles"); break;
 
-  // Piscada branca rápida
-  meusLeds.setMode(OW_WHITESPARKLES_FAST);
-  delay(4000);
+      // Fita 2 - Cores
+      case 'R': fita2.setColor(OW_RED); Serial.println("Fita 2: Vermelho"); break;
+      case 'G': fita2.setColor(OW_GREEN); Serial.println("Fita 2: Verde"); break;
+      case 'B': fita2.setColor(OW_BLUE); Serial.println("Fita 2: Azul"); break;
+      case 'W': fita2.setColor(OW_WHITE); Serial.println("Fita 2: Branco"); break;
 
-  // Arco-íris (Full Color)
-  meusLeds.setModeAndColor(OW_SOLID, OW_FULLCOLOR);
-  delay(5000);
+      // Fita 2 - Modos
+      case '!': fita2.setMode(OW_SOLID); Serial.println("Fita 2: Solido"); break;
+      case '@': fita2.setMode(OW_8SECONDFADE); Serial.println("Fita 2: Fade 8s"); break;
+      case '#': fita2.setMode(OW_COLORSPARKLES_FAST); Serial.println("Fita 2: Sparkles"); break;
+    }
+  }
 }
