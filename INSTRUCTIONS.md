@@ -15,9 +15,10 @@ Este sistema foca no controle via DMX, usando os dois primeiros canais.
 ## 3. Pinagem (ESP32-C3 Super Mini)
 | Componente | Pino |
 | :--- | :--- |
-| **LED OWire** | GPIO 2 |
+| **LED OWire** | GPIO 6 |
 | **OLED I2C** | GPIO 8 (SDA) / 9 (SCL) |
-| **Botões** | GPIO 3, 4, 5, 6 |
+| **Botões (U/D/S)**| GPIO 3, 4, 5 |
+| **Botão BACK** | GPIO 7 |
 | **DMX RX** | GPIO 20 |
 
 ## 4. Estrutura de Pastas

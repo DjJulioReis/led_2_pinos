@@ -19,13 +19,13 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 OWIRE meusLeds;
-#define PIN_OWIRE 2 // Alterado para GPIO 2 conforme solicitado
+#define PIN_OWIRE 6 // Alterado para GPIO 6 conforme solicitado
 
 // Botões
 #define BTN_UP 3
 #define BTN_DOWN 4
 #define BTN_SELECT 5
-#define BTN_BACK 6
+#define BTN_BACK 7 // Movido para 7 para liberar a 6 para o LED
 
 // Estados
 Preferences preferences;
