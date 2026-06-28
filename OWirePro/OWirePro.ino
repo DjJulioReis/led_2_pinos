@@ -2,10 +2,10 @@
   SISTEMA DE CONTROLE OWIRE LED - ESP32-C3 SUPER MINI
 
   Configuração DMX:
-  - Canal 1: Cor (Endereço 1 na Mesa)
-  - Canal 2: Efeito (Endereço 2 na Mesa)
+  - Canal 1 (Mesa): Cor (0-255 -> 12 cores)
+  - Canal 2 (Mesa): Efeito (0-255 -> 8 modos)
 
-  PASTA DO PROJETO: OWirePro
+  PASTA DO PROJETO: OWirePro (O arquivo deve se chamar OWirePro.ino)
 */
 
 #include <Wire.h>
@@ -18,10 +18,10 @@
 #define SCREEN_HEIGHT 64
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-OWIRE myLed; // Nome padrão em inglês conforme solicitado
-#define PIN_OWIRE 6
+OWIRE myLed;
+#define PIN_OWIRE 6 // Saída de dados conforme solicitado
 
-// Pinos I2C
+// Pinos I2C Seguros para o Super Mini C3
 #define SDA_PIN 0
 #define SCL_PIN 1
 
@@ -55,33 +55,44 @@ void setup() {
 
   myLed.begin(PIN_OWIRE, false);
 
+  // Recupera última configuração salva
   preferences.begin("led-settings", true);
   current_color = preferences.getUChar("color", OW_WHITE);
   current_mode = preferences.getUChar("mode", OW_SOLID);
   preferences.end();
 
-  // DMX RX em Serial1 (GPIO 20)
+  // DMX RX no GPIO 20 (Serial1)
   Serial1.begin(250000, SERIAL_8N2, 20, -1);
 
   myLed.setModeAndColor(current_mode, current_color);
 }
 
+void updateUI() {
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("OWIRE DMX MONITOR");
+  display.print("CH1 (COLOR): "); display.println(dmx_val_ch1);
+  display.print("CH2 (MODE) : "); display.println(dmx_val_ch2);
+  display.print("STATUS: "); display.println(color_names[current_color % 12]);
+  display.display();
+}
+
 unsigned long last_dmx_packet = 0;
+
 void loop() {
   if (Serial1.available()) {
-    // Sincronia: Após silêncio de 10ms, limpamos o buffer e esperamos o início
+    // Sincronização: Aguarda fim de pacote (pausa > 10ms)
     if (millis() - last_dmx_packet > 10) {
-      // Limpa buffer para garantir que começamos no byte 0
-      while(Serial1.available() > 0) Serial1.read();
-
-      // Espera o frame completo ou parte dele
-      delay(20);
+      while(Serial1.available() > 0) Serial1.read(); // Limpa buffer
+      delay(20); // Aguarda novos dados do novo frame
 
       int count = 0;
       bool changed = false;
+
       while (Serial1.available() && count < 5) {
         uint8_t val = Serial1.read();
-        if (count == 1) { // CANAL 1
+
+        if (count == 1) { // CANAL 1 DA MESA
           if (val != dmx_val_ch1) {
             dmx_val_ch1 = val;
             current_color = map(val, 0, 255, 0, 11);
@@ -89,7 +100,7 @@ void loop() {
             changed = true;
           }
         }
-        else if (count == 2) { // CANAL 2
+        else if (count == 2) { // CANAL 2 DA MESA
           if (val != dmx_val_ch2) {
             dmx_val_ch2 = val;
             current_mode = map(val, 0, 255, 0, 7) << 4;
@@ -107,14 +118,4 @@ void loop() {
     }
     last_dmx_packet = millis();
   }
-}
-
-void updateUI() {
-  display.clearDisplay();
-  display.setCursor(0,0);
-  display.println("DMX MONITOR");
-  display.print("CH1 (COR): "); display.println(dmx_val_ch1);
-  display.print("CH2 (EFE): "); display.println(dmx_val_ch2);
-  display.print("ST: "); display.println(color_names[current_color % 12]);
-  display.display();
 }
