@@ -1,41 +1,46 @@
-# Guia de Controle de LEDs RGB de 2 Pinos com ESP32-C3 Super Mini
+# Sistema Profissional OWire LED - ESP32-C3 Super Mini
 
-Este projeto permite controlar LEDs RGB de 2 pinos (OWire) de forma independente por cor e efeito.
+Este sistema avançado permite controle total de LEDs RGB de 2 pinos via App, DMX, e Painel Físico.
 
-## ⚠️ Solução de Problemas: O "Toque" de Start
-Se o seu LED só começa a funcionar quando você toca no fio/circuito, isso indica um **problema de integridade de sinal ou falta de corrente**.
-- O ESP32-C3 fornece apenas 3.3V e baixa corrente nos pinos.
-- O sinal OWire precisa de transições limpas de tensão. Seu corpo está agindo como uma capacitância/aterramento que "limpa" o ruído ou ajuda no pulso inicial.
-- **Solução:** Você **precisa** usar um MOSFET (P-Channel) ou ao menos um transistor para chavear a alimentação dos LEDs de forma robusta. Veja a seção de hardware.
+## 1. Esquema de Hardware (Pinagem Atualizada)
+*Evite usar GPIO 0, 2 ou 8 para botões para não interferir no boot do ESP32.*
 
-## 1. Controle Independente
-Os LEDs OWire em uma mesma fita recebem todos o mesmo comando (não são endereçáveis individualmente como os WS2812B).
-Para ter controle independente de diferentes conjuntos de LEDs:
-1. Conecte cada fita a um pino diferente (ex: GPIO 2 e GPIO 3).
-2. Crie múltiplas instâncias no código: `OWIRE fita1; OWIRE fita2;`.
+| Componente | Pino ESP32-C3 | Função |
+| :--- | :--- | :--- |
+| **LED OWire** | GPIO 10 | Saída de Dados (Requer MOSFET P-Channel). |
+| **Display OLED SDA** | GPIO 8 | Dados I2C. |
+| **Display OLED SCL** | GPIO 9 | Clock I2C. |
+| **Botão UP** | GPIO 3 | Navegar menu / Trocar valor. |
+| **Botão DOWN** | GPIO 4 | Navegar menu / Trocar valor. |
+| **Botão SELECT** | GPIO 5 | Entrar no Menu / Confirmar. |
+| **Botão BACK** | GPIO 6 | Sair do Menu / Voltar. |
+| **DMX RX** | GPIO 20 | Entrada DMX (Conectar ao RO do MAX485). |
 
-## 2. Configuração do Hardware (Recomendada para Estabilidade)
+## 2. Operação do Sistema
 
-### Uso de MOSFET P-Channel (Essencial para evitar o erro do "toque")
-1. **Fonte 5V (+) -> MOSFET Source**.
-2. **MOSFET Drain -> Anodo dos LEDs (+)**.
-3. **ESP32 GPIO -> Resistor 1k -> MOSFET Gate**.
-4. **Resistor de Pull-up (10k)** entre o **Gate** e o **Source** (ajuda a manter o sinal limpo).
-5. **GND comum** para tudo.
+### Menu Físico
+- **Tela Inicial:** Exibe a cor e o modo atuais por nome.
+- **Botão SELECT:** Entra no modo de edição.
+- **Botões UP/DOWN:** Alternam entre Cor e Modo, ou mudam os valores quando selecionados.
+- **Botão BACK:** Retorna à tela principal.
 
-No código, se usar MOSFET P-Channel, use: `fita.begin(PINO, true);`.
+### Controle via App (Bluetooth)
+- Conecte ao dispositivo `ESP32-OWire-Pro`.
+- Envie um array de bytes `[Modo, Cor]` para atualização instantânea.
+- O sistema salvará automaticamente na memória flash.
 
-## 3. Comandos via Serial
-O código atual permite enviar letras pelo Monitor Serial (115200 baud) para trocar cores e efeitos de forma independente:
+### DMX512
+- O sistema escuta no endereço inicial (default: 1).
+- **Canal 1:** Cor (mapeado de 0-255 para as 12 cores disponíveis).
+- **Canal 2:** Modo (mapeado de 0-255 para os 8 modos disponíveis).
 
-| Comando | Ação (Fita 1) | Comando | Ação (Fita 2) |
-| :--- | :--- | :--- | :--- |
-| **r** | Vermelho | **R** | Vermelho |
-| **g** | Verde | **G** | Verde |
-| **b** | Azul | **B** | Azul |
-| **1** | Modo Sólido | **!** | Modo Sólido |
-| **2** | Modo Fade | **@** | Modo Fade |
+## 3. Integridade de Sinal e "Toque"
+Se o sistema apresentar instabilidade ou exigir o toque do dedo para iniciar:
+1. **Use um MOSFET P-Channel** conforme recomendado no primeiro guia.
+2. Certifique-se de que o **GND** do ESP32 e o **GND** da fonte dos LEDs estejam unidos.
+3. Adicione um capacitor de 100uF na entrada de alimentação dos LEDs.
 
-## 4. Instalação da Biblioteca
-1. Baixe/Copie a pasta `SparkFun_OWire_Arduino_Library-main` para sua pasta `libraries` do Arduino.
-2. Reinicie o Arduino IDE.
+## 4. Bibliotecas Necessárias
+- `Adafruit SSD1306` & `Adafruit GFX`
+- `Preferences` (Nativa)
+- `SparkFun OWire Arduino Library` (Incluída no repo)
