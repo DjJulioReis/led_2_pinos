@@ -15,7 +15,7 @@
 #include <BLEServer.h>
 
 // PINAGEM ESP32 DEV KIT V1
-#define PIN_OWIRE 4       // OWire LED (GPIO 4)
+#define PIN_OWIRE 32      // OWire LED (GPIO 32 conforme solicitado)
 #define SDA_PIN 21        // I2C SDA (Padrão DevKit)
 #define SCL_PIN 22        // I2C SCL (Padrão DevKit)
 #define ENC_CLK 13        // Encoder CLK
