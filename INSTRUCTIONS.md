@@ -1,37 +1,30 @@
-# Sistema Profissional Mileto Indústria - OWire LED
+# Sistema Mileto Indústria - ESP32-C3 OWire Pro
 
-Este firmware é exclusivo para produtos da **Mileto Indústria**. Ele utiliza um encoder rotativo para navegação e possui um sistema de segurança via Bluetooth para validar a autenticidade do hardware no App Flutter.
+Este código foi otimizado para o **ESP32-C3 Super Mini (Blue)**, corrigindo a diferença de timing entre o processador original (ATmega328) e o novo chip.
 
-## 1. Pinagem (Hardware)
+## ⚠️ Por que os LEDs ficam todos acesos?
+Se os LEDs ficarem todos acesos sem mudar de cor, existem dois motivos comuns:
 
-| Componente | Pino ESP32-C3 | Notas |
-| :--- | :--- | :--- |
-| **LED OWire** | GPIO 6 | Saída de dados para os LEDs. |
-| **OLED SDA** | GPIO 8 | Linha de dados I2C. |
-| **OLED SCL** | GPIO 9 | Linha de clock I2C. |
-| **Encoder CLK** | GPIO 2 | Conectar ao pino CLK do encoder. |
-| **Encoder DT** | GPIO 3 | Conectar ao pino DT do encoder. |
-| **Encoder SW** | GPIO 4 | Botão do encoder (Clique para OK). |
-| **DMX RX** | GPIO 20 | Entrada DMX (RS485). |
+1. **Diferença de Tensão (3.3V vs 5V):** O ESP32-C3 envia sinais em 3.3V, mas muitos LEDs OWire exigem pulsos de 5V para entender os comandos.
+   - **Solução:** Use um **MOSFET P-Channel** (conforme explicado nos guias anteriores) para chavear uma fonte de 5V externa. Isso garante que os pulsos cheguem com 5V reais.
+2. **Timing do Processador:** O ESP32 é muito mais rápido que o Arduino Uno. Atualizamos o código com uma função `sendCommand` customizada que usa tempos de espera maiores para garantir que o sinal OWire seja reconhecido.
 
-## 2. Interface do Usuário (Menu Mileto)
-- **Giro do Encoder:** Navega entre as opções (Cor, Modo, Fonte).
-- **Clique no Encoder:** Entra ou sai do modo de configuração.
-- **Splash Screen:** Exibe a marca "Mileto" ao ligar.
+## 1. Pinagem MILETO Final
+| Componente | Pino ESP32-C3 |
+| :--- | :--- |
+| **LED OWire** | **GPIO 2** |
+| **OLED SDA** | **GPIO 8** |
+| **OLED SCL** | **GPIO 9** |
+| **Encoder CLK**| **GPIO 3** |
+| **Encoder DT** | **GPIO 4** |
+| **Encoder SW** | **GPIO 5** |
+| **DMX RX** | **GPIO 20** |
 
-## 3. Segurança e App Flutter
-O App Flutter deve validar o dispositivo antes de permitir o controle.
-- **UUID de Autenticação:** `d21b0f5b-0c9f-4d3b-9c5c-7d9d9f5c4d2d`
-- **Código de Segurança esperado:** `MILETO_AUTH_2024_PRO`
+## 2. Operação
+- **Giro do Encoder:** Altera a cor manualmente e muda para modo **MANUAL**.
+- **Clique do Encoder:** Alterna entre modo **DMX** e modo **MANUAL**.
+- **Splash Screen:** Exibe a marca Mileto ao iniciar.
+- **DMX:** Canal 1 (Cor) e Canal 2 (Efeito).
 
-Se o App não encontrar este UUID ou o código estiver incorreto, ele deve exibir a mensagem:
-> "Nenhum produto Mileto foi encontrado. Deseja acessar nosso site? https://mileto.ind.br/"
-
-## 4. Controle DMX
-O sistema escuta nos canais 1 e 2. O display OLED atua como um monitor em tempo real, exibindo os valores recebidos da mesa DMX.
-
-## 5. Bibliotecas Necessárias
-- `Adafruit SSD1306` & `Adafruit GFX`
-- `Preferences` (Nativa)
-- `BLEDevice` (Nativa)
-- `SparkFun OWire Arduino Library` (Incluída no repo)
+## 3. Segurança App Mileto
+O App Flutter deve ler a característica BLE para validar o código `MILETO_AUTH_2024_PRO`. Se não encontrar, deve redirecionar para: https://mileto.ind.br/
