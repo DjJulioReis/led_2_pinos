@@ -1,6 +1,6 @@
 /*
   SISTEMA PROFISSIONAL OWIRE LED - MILETO INDÚSTRIA
-  VERSÃO ADAPTADA PARA ESP32 DEV KIT V1
+  VERSÃO ADAPTADA PARA ESP32 DEV KIT V1 (myLED)
 
   PASTA DO PROJETO: OWirePro
 */
@@ -15,19 +15,19 @@
 #include <BLEServer.h>
 
 // PINAGEM ESP32 DEV KIT V1
-#define PIN_OWIRE 32      // OWire LED (GPIO 32 conforme solicitado)
-#define SDA_PIN 21        // I2C SDA (Padrão DevKit)
-#define SCL_PIN 22        // I2C SCL (Padrão DevKit)
-#define ENC_CLK 13        // Encoder CLK
-#define ENC_DT 14         // Encoder DT
-#define ENC_SW 27         // Encoder Button
-#define PIN_DMX_RX 16     // DMX RX (Serial 2 - RX2)
+#define PIN_OWIRE 32
+#define SDA_PIN 21
+#define SCL_PIN 22
+#define ENC_CLK 13
+#define ENC_DT 14
+#define ENC_SW 27
+#define PIN_DMX_RX 16
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-OWIRE myLed;
+OWIRE myLED; // Nome padrão da biblioteca
 Preferences preferences;
 
 // Segurança Mileto
@@ -54,7 +54,7 @@ void saveSettings() {
 }
 
 void updateLEDs() {
-  myLed.setModeAndColor(current_mode, current_color);
+  myLED.setModeAndColor(current_mode, current_color);
 }
 
 void showSplash() {
@@ -125,7 +125,7 @@ void handleEncoder() {
 unsigned long last_dmx_packet = 0;
 void handleDMX() {
   if (current_source != DMX) return;
-  if (Serial2.available()) { // RX2 no Dev Kit
+  if (Serial2.available()) {
     if (millis() - last_dmx_packet > 10) {
       while(Serial2.available() > 0) Serial2.read();
       delay(20);
@@ -133,8 +133,20 @@ void handleDMX() {
       bool changed = false;
       while(Serial2.available() && count < 5) {
         uint8_t val = Serial2.read();
-        if (count == 1) { dmx_ch1 = val; current_color = map(val, 0, 255, 0, 11); changed = true; }
-        if (count == 2) { dmx_ch2 = val; current_mode = map(val, 0, 255, 0, 7) << 4; changed = true; }
+        if (count == 1) {
+          if (val != dmx_ch1) {
+            dmx_ch1 = val;
+            current_color = map(val, 0, 255, 0, 11);
+            changed = true;
+          }
+        }
+        else if (count == 2) {
+          if (val != dmx_ch2) {
+            dmx_ch2 = val;
+            current_mode = map(val, 0, 255, 0, 7) << 4;
+            changed = true;
+          }
+        }
         count++;
       }
       if(changed) { updateLEDs(); updateDisplay(); }
@@ -145,29 +157,23 @@ void handleDMX() {
 
 void setup() {
   Serial.begin(115200);
-
-  // I2C Dev Kit (21, 22)
   Wire.begin(SDA_PIN, SCL_PIN);
   if(display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     showSplash();
   }
 
-  // OWire
-  myLed.begin(PIN_OWIRE, false);
+  myLED.begin(PIN_OWIRE, false);
 
-  // Encoder
   pinMode(ENC_CLK, INPUT_PULLUP);
   pinMode(ENC_DT, INPUT_PULLUP);
   pinMode(ENC_SW, INPUT_PULLUP);
 
-  // Recuperar Memoria
   preferences.begin("mileto-pref", true);
   current_color = preferences.getUChar("color", OW_WHITE);
   current_mode = preferences.getUChar("mode", OW_SOLID);
   current_source = (Source)preferences.getInt("source", (int)DMX);
   preferences.end();
 
-  // BLE Seguranca Mileto
   BLEDevice::init("Mileto-DevKit-LED");
   BLEServer *pServer = BLEDevice::createServer();
   BLEService *pService = pServer->createService(SERVICE_UUID);
@@ -176,7 +182,6 @@ void setup() {
   pService->start();
   BLEDevice::getAdvertising()->start();
 
-  // DMX RX no RX2 (GPIO 16)
   Serial2.begin(250000, SERIAL_8N2, PIN_DMX_RX, -1);
 
   updateLEDs();

@@ -1,26 +1,27 @@
-# Sistema Mileto Indústria - OWire LED
+# Sistema Mileto Indústria - OWire LED (Correção)
 
-Este repositório contém diferentes versões de controle para LEDs OWire de 2 pinos.
+Atualizamos os nomes das funções e instâncias para garantir compatibilidade total com a biblioteca SparkFun OWire.
 
-## 1. Versão Simples (Auto-Ciclo)
-Ideal para testar se os LEDs estão funcionando e se a fiação está correta.
-- **Pasta:** `exemplo_simples`
-- **Funcionamento:** O LED troca de cor automaticamente a cada 3 segundos. Não requer botões ou sensores.
-- **Pino de Saída:** GPIO 32.
+## ⚠️ Nome da Instância: myLED
+A biblioteca espera o uso do nome `myLED` conforme os exemplos oficiais. Todos os arquivos foram atualizados para este padrão.
 
-## 2. Versão Profissional (DMX + Encoder + OLED)
-Sistema completo da Mileto Indústria com interface visual e controle via mesa de luz.
-- **Pasta:** `OWirePro`
-- **Recursos:** Encoder rotativo, DMX Canais 1 e 2, Splash Screen Mileto e Segurança BLE.
-
-## 3. Pinagem Recomendada (Dev Kit V1)
+## 1. Pinagem Final (Dev Kit V1)
 | Componente | Pino |
 | :--- | :--- |
-| **LED OWire** | GPIO 32 |
+| **LED OWire** | **GPIO 32** |
 | **DMX RX** | GPIO 16 |
-| **Encoder** | GPIO 13, 14, 27 |
-| **OLED** | GPIO 21, 22 |
+| **Encoder CLK**| GPIO 13 |
+| **Encoder DT** | GPIO 14 |
+| **Encoder SW** | GPIO 27 |
+| **OLED SDA** | GPIO 21 |
+| **OLED SCL** | GPIO 22 |
 
-## 4. Estrutura de Pastas
-Para evitar erros de compilação no Arduino IDE:
-1. O arquivo `.ino` deve estar dentro de uma pasta com o **mesmo nome** (Ex: `exemplo_simples/exemplo_simples.ino`).
+## 2. Estrutura de Pastas
+Para evitar erros de compilação:
+- Sistema Completo: `OWirePro/OWirePro.ino`
+- Teste Auto-Ciclo: `exemplo_simples/exemplo_simples.ino`
+
+## 3. Dica de Funcionamento
+Se os LEDs continuarem sem mudar de cor:
+1. Verifique se o **GND** está bem conectado.
+2. Tente alimentar o LED com **5V** e o sinal via **MOSFET**, pois o pino do ESP32 (3.3V) pode não ter força suficiente para o protocolo OWire.

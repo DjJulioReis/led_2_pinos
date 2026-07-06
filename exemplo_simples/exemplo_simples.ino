@@ -1,27 +1,28 @@
 /*
   SISTEMA OWIRE LED - VERSÃO SIMPLES (AUTO-CICLO)
-  Este código apenas troca as cores fixas automaticamente, sem controles externos.
+  Corrigido para usar o nome da instância 'myLED' conforme a biblioteca.
 
   PASTA DO PROJETO: exemplo_simples
 */
 
 #include <SparkFun_OWire_Arduino_Library.h>
 
-// Pino de saída (GPIO 32 conforme solicitado)
+// Pino de saída (GPIO 32 para Dev Kit)
 #define PIN_OWIRE 32
 
-OWIRE myLed;
+// Nome da instância deve ser myLED (ou qualquer outro, mas seguiremos o exemplo oficial)
+OWIRE myLED;
 
 void setup() {
   Serial.begin(115200);
 
-  // Inicializa a biblioteca
-  if(myLed.begin(PIN_OWIRE, false)) {
-    Serial.println("OWire Iniciado - Modo Auto-Ciclo no GPIO 32");
+  // Inicializa a biblioteca no pino 32
+  if(myLED.begin(PIN_OWIRE, false)) {
+    Serial.println("OWire Iniciado com myLED no GPIO 32");
   }
 
   // Define modo solido inicial
-  myLed.setMode(OW_SOLID);
+  myLED.setMode(OW_SOLID);
 }
 
 void loop() {
@@ -30,7 +31,7 @@ void loop() {
     Serial.print("Cor atual: ");
     Serial.println(i);
 
-    myLed.setColor(i);
-    delay(3000); // Fica 3 segundos em cada cor
+    myLED.setColor(i);
+    delay(3000); // 3 segundos em cada cor
   }
 }
